@@ -111,6 +111,29 @@ describe("workspace shell tabs (TC-004 / AC-004)", () => {
     });
     expect(screen.getByRole("tab", { name: /Capitals/ })).toBeInTheDocument();
   });
+
+  it("should activate the neighbour tab if the active tab is closed (E-3)", async () => {
+    const user = userEvent.setup();
+    renderShell();
+
+    await screen.findByText("PureDeck");
+    await user.click(screen.getByText("Spanish"));
+    await user.click(screen.getByText("Capitals"));
+
+    const capitalsTab = await screen.findByRole("tab", { name: /Capitals/ });
+    expect(capitalsTab).toHaveAttribute("aria-selected", "true");
+
+    await user.click(within(capitalsTab).getByRole("button"));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("tab", { name: /Capitals/ }),
+      ).not.toBeInTheDocument();
+    });
+    expect(
+      await screen.findByRole("tab", { name: /Spanish/ }),
+    ).toHaveAttribute("aria-selected", "true");
+  });
 });
 
 function ReorderProbe() {
@@ -156,6 +179,24 @@ describe("workspace shell tab reorder (AC-004)", () => {
       expect(after[0]).toMatch(/Capitals/);
       expect(after[1]).toMatch(/Spanish/);
     });
+  });
+});
+
+describe("workspace shell stale active tab (E-8)", () => {
+  it("should activate the first open tab if the persisted active tab is stale", async () => {
+    const store = createInMemorySettingsStore({
+      version: 1,
+      layouts: {},
+      sidebarCollapsed: false,
+      openTabIds: ["spanish", "capitals"],
+      activeTabId: "gone",
+      theme: { mode: "system" },
+    });
+    renderShell(store);
+
+    const spanishTab = await screen.findByRole("tab", { name: /Spanish/ });
+    expect(spanishTab).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryByText("No deck open")).not.toBeInTheDocument();
   });
 });
 

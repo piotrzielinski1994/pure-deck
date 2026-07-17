@@ -61,7 +61,11 @@ export function WorkspaceProvider({
   decks?: Deck[];
 }) {
   const { settings, saveOpenTabs } = useSettings();
-  const { openTabIds, activeTabId } = settings;
+  const { openTabIds } = settings;
+  const activeTabId =
+    settings.activeTabId !== null && openTabIds.includes(settings.activeTabId)
+      ? settings.activeTabId
+      : (openTabIds[0] ?? null);
 
   const deckById = useCallback(
     (id: string) => decks.find((deck) => deck.id === id),

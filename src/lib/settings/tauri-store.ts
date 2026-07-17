@@ -23,7 +23,9 @@ export function createTauriSettingsStore(): SettingsStore {
     await store
       .set(SETTINGS_KEY, settings)
       .then(() => store.save())
-      .catch(() => undefined);
+      .catch((error) => {
+        console.error("Failed to persist settings:", error);
+      });
   };
 
   return { load, save };
