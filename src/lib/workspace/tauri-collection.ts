@@ -10,9 +10,11 @@ import type { Deck } from "@/lib/workspace/model";
 import {
   parseDeck,
   seedFileMap,
+  serializeDeck,
   type CollectionStore,
 } from "@/lib/workspace/collection";
 import { DEMO_DECKS } from "@/lib/workspace/demo-data";
+import { slugify, uniqueSlug } from "@/lib/workspace/slug";
 
 const COLLECTION_DIR = "collections";
 
@@ -41,19 +43,30 @@ async function seedDemoDecks(root: string): Promise<void> {
   );
 }
 
-async function readDecks(root: string): Promise<Deck[]> {
+async function readDecks(
+  root: string,
+  slugById: Map<string, string>,
+): Promise<Deck[]> {
   const names = await jsonFileNames(root);
   const raws = await Promise.all(
     names.map((name) => readTextFile(`${root}/${name}`)),
   );
-  return raws
-    .map(parseDeck)
+  return names
+    .map((name, index) => {
+      const deck = parseDeck(raws[index]);
+      if (deck !== null) {
+        slugById.set(deck.id, name.replace(/\.json$/, ""));
+      }
+      return deck;
+    })
     .filter((deck): deck is Deck => deck !== null);
 }
 
 export function createTauriCollectionStore(
   collectionPath?: string,
 ): CollectionStore {
+  const slugById = new Map<string, string>();
+
   const load = async (): Promise<Deck[]> => {
     try {
       const root = await collectionRoot(collectionPath);
@@ -62,11 +75,26 @@ export function createTauriCollectionStore(
       if (names.length === 0) {
         await seedDemoDecks(root);
       }
-      return await readDecks(root);
+      return await readDecks(root, slugById);
     } catch (error) {
       console.error("Failed to load collections:", error);
       return DEMO_DECKS;
     }
   };
-  return { load };
+
+  const save = async (deck: Deck): Promise<void> => {
+    try {
+      const root = await collectionRoot(collectionPath);
+      await mkdir(root, { recursive: true });
+      const slug =
+        slugById.get(deck.id) ??
+        uniqueSlug(slugify(deck.name), new Set(slugById.values()));
+      slugById.set(deck.id, slug);
+      await writeTextFile(`${root}/${slug}.json`, serializeDeck(deck));
+    } catch (error) {
+      console.error("Failed to save deck:", error);
+    }
+  };
+
+  return { load, save };
 }

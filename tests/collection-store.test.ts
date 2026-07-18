@@ -215,3 +215,25 @@ describe("createCollectionStore factory (AC-006 / TC-005 / E-6)", () => {
     expect(sortedNames(decks)).toEqual(sortedNames(DEMO_DECKS));
   });
 });
+
+describe("createInMemoryCollectionStore save (AC-006 / TC-006)", () => {
+  it("should overwrite the matching entry so a later load returns the edited deck", async () => {
+    const store = createInMemoryCollectionStore({
+      beta: serializeDeck(deckB),
+    });
+
+    const edited: Deck = {
+      ...deckB,
+      cards: [
+        { id: "b1", front: "DOS", back: "two" },
+        { id: "b2", front: "tres", back: "three" },
+      ],
+    };
+
+    await store.save(edited);
+    const decks = await store.load();
+
+    const reloaded = decks.find((deck) => deck.id === "b");
+    expect(reloaded).toEqual(edited);
+  });
+});

@@ -3,6 +3,7 @@ import { slugify, uniqueSlug } from "@/lib/workspace/slug";
 
 export type CollectionStore = {
   load: () => Promise<Deck[]>;
+  save: (deck: Deck) => Promise<void>;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
