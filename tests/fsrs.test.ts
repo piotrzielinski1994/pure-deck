@@ -31,8 +31,13 @@ describe("FSRS-6 defaults sanity", () => {
     expect(State.Relearning).toBe(3);
   });
 
-  it("should build a scheduler instance", () => {
-    expect(createScheduler()).toBeDefined();
+  it("should build a scheduler configured with FSRS-6 defaults", () => {
+    const params = createScheduler().parameters;
+
+    expect(params.w).toHaveLength(21);
+    expect(params.request_retention).toBe(0.9);
+    expect(params.maximum_interval).toBe(36500);
+    expect(params.enable_fuzz).toBe(true);
   });
 });
 
@@ -102,13 +107,43 @@ describe("gradeReview on a graduated Review-state card (TC-002 / AC-002)", () =>
 });
 
 describe("seeded fuzz determinism (TC-003 / AC-003)", () => {
+  const start = new Date("2026-07-19T12:00:00Z");
+
+  function longIntervalCard(scheduler: ReturnType<typeof createScheduler>, cid: string) {
+    const offsetsMinutes = [0, 10, 3 * 24 * 60, 20 * 24 * 60];
+    return offsetsMinutes.reduce(
+      (card, offset) =>
+        gradeReview(
+          scheduler,
+          card,
+          Rating.Good,
+          cid,
+          new Date(start.getTime() + offset * 60_000),
+        ).card,
+      newCard(start),
+    );
+  }
+
   it("should produce a millisecond-equal due for identical inputs across two calls", () => {
-    const now = new Date("2026-07-19T12:00:00Z");
     const scheduler = createScheduler();
+    const base = longIntervalCard(scheduler, "cid-det");
+    const at = new Date(base.due.getTime());
 
-    const first = gradeReview(scheduler, newCard(now), Rating.Good, "cid-det", now);
-    const second = gradeReview(scheduler, newCard(now), Rating.Good, "cid-det", now);
+    const first = gradeReview(scheduler, base, Rating.Good, "cid-det", at);
+    const second = gradeReview(scheduler, base, Rating.Good, "cid-det", at);
 
+    expect(first.card.scheduled_days).toBeGreaterThan(1);
     expect(first.card.due.getTime()).toBe(second.card.due.getTime());
+  });
+
+  it("should apply different fuzz per card id so the seed strategy is actually wired", () => {
+    const scheduler = createScheduler();
+    const base = longIntervalCard(scheduler, "cid-seed");
+    const at = new Date(base.due.getTime());
+
+    const dueX = gradeReview(scheduler, base, Rating.Good, "seed-x", at).card.due.getTime();
+    const dueY = gradeReview(scheduler, base, Rating.Good, "seed-y", at).card.due.getTime();
+
+    expect(dueX).not.toBe(dueY);
   });
 });

@@ -168,6 +168,29 @@ describe("StudyView completion at mount (TC-010 / AC-007)", () => {
   });
 });
 
+describe("StudyView rebuilds the queue when reviews load late (cold start)", () => {
+  it("should exclude a now-future card once reviews arrive after the initial empty mount", () => {
+    const single: Deck = { id: "es", name: "Spanish", cards: [deck.cards[0]] };
+    const { rerender } = render(
+      <StudyView deck={single} reviews={{}} onGrade={dropOnGrade} now={NOW} />,
+    );
+
+    expect(screen.getByText("gato")).toBeInTheDocument();
+
+    rerender(
+      <StudyView
+        deck={single}
+        reviews={{ c1: fsrsCardDueAt(FUTURE_DUE) }}
+        onGrade={dropOnGrade}
+        now={NOW}
+      />,
+    );
+
+    expect(screen.getByText(/all caught up/i)).toBeInTheDocument();
+    expect(screen.queryByText("gato")).not.toBeInTheDocument();
+  });
+});
+
 describe("StudyView empty deck (unchanged message)", () => {
   it("should show the No cards to study message when the deck has no cards", () => {
     const empty: Deck = { id: "es", name: "Spanish", cards: [] };

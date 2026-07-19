@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useActionHotkeys } from "@/lib/shortcuts/use-action-hotkeys";
 import type { Card, Deck } from "@/lib/workspace/model";
 import {
@@ -17,30 +17,44 @@ const GRADES = [
 ] as const satisfies readonly (readonly [string, Grade])[];
 
 function isSameDay(a: Date, b: Date): boolean {
-  return a.toISOString().slice(0, 10) === b.toISOString().slice(0, 10);
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }
 
 export function StudyView({
   deck,
   reviews,
   onGrade,
-  now = nowDate(),
+  now: nowProp,
 }: {
   deck: Deck;
   reviews: ReviewMap;
   onGrade: (cardId: string, grade: Grade) => FsrsCard;
   now?: Date;
 }) {
+  const now = useMemo(() => nowProp ?? nowDate(), [nowProp]);
   const [queue, setQueue] = useState<Card[]>(() =>
     buildStudyQueue(deck, reviews, now),
   );
   const [isFlipped, setIsFlipped] = useState(false);
+  const hasGraded = useRef(false);
+
+  useEffect(() => {
+    if (hasGraded.current) {
+      return;
+    }
+    setQueue(buildStudyQueue(deck, reviews, now));
+  }, [deck, reviews, now]);
 
   const card = queue[0];
 
   const flip = () => setIsFlipped(true);
 
   const grade = (value: Grade) => {
+    hasGraded.current = true;
     setIsFlipped(false);
     const scheduled = onGrade(card.id, value);
     setQueue((current) =>
