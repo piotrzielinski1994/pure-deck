@@ -15,6 +15,8 @@ import {
   type SettingsStore,
   type ThemeMode,
 } from "@/lib/settings/settings";
+import type { ShortcutActionId } from "@/lib/shortcuts/registry";
+import { resolveShortcuts, safeNormalize } from "@/lib/shortcuts/resolve";
 
 type SettingsContextValue = {
   settings: Settings;
@@ -22,6 +24,14 @@ type SettingsContextValue = {
   saveSidebarCollapsed: (collapsed: boolean) => void;
   saveOpenTabs: (openTabIds: string[], activeTabId: string | null) => void;
   saveThemeMode: (mode: ThemeMode) => void;
+  addShortcut: (id: ShortcutActionId, hotkey: string) => void;
+  removeShortcut: (id: ShortcutActionId, hotkey: string) => void;
+  replaceShortcut: (
+    id: ShortcutActionId,
+    oldHotkey: string,
+    newHotkey: string,
+  ) => void;
+  resetShortcut: (id: ShortcutActionId) => void;
 };
 
 export const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -84,6 +94,80 @@ export function SettingsProvider({ store, children }: SettingsProviderProps) {
     [update],
   );
 
+  const addShortcut = useCallback(
+    (id: ShortcutActionId, hotkey: string) =>
+      update((base) => {
+        const normalized = safeNormalize(hotkey);
+        if (normalized === null) {
+          return base;
+        }
+        const current = resolveShortcuts(base.shortcuts)[id];
+        if (current.includes(normalized)) {
+          return base;
+        }
+        return {
+          ...base,
+          shortcuts: { ...base.shortcuts, [id]: [...current, normalized] },
+        };
+      }),
+    [update],
+  );
+
+  const removeShortcut = useCallback(
+    (id: ShortcutActionId, hotkey: string) =>
+      update((base) => {
+        const normalized = safeNormalize(hotkey) ?? hotkey;
+        const current = resolveShortcuts(base.shortcuts)[id];
+        return {
+          ...base,
+          shortcuts: {
+            ...base.shortcuts,
+            [id]: current.filter((binding) => binding !== normalized),
+          },
+        };
+      }),
+    [update],
+  );
+
+  const replaceShortcut = useCallback(
+    (id: ShortcutActionId, oldHotkey: string, newHotkey: string) =>
+      update((base) => {
+        const normalizedNew = safeNormalize(newHotkey);
+        if (normalizedNew === null) {
+          return base;
+        }
+        const normalizedOld = safeNormalize(oldHotkey) ?? oldHotkey;
+        const current = resolveShortcuts(base.shortcuts)[id];
+        if (!current.includes(normalizedOld)) {
+          return base;
+        }
+        const swapped = current.map((binding) =>
+          binding === normalizedOld ? normalizedNew : binding,
+        );
+        return {
+          ...base,
+          shortcuts: {
+            ...base.shortcuts,
+            [id]: swapped.filter(
+              (binding, index) => swapped.indexOf(binding) === index,
+            ),
+          },
+        };
+      }),
+    [update],
+  );
+
+  const resetShortcut = useCallback(
+    (id: ShortcutActionId) =>
+      update((base) => ({
+        ...base,
+        shortcuts: Object.fromEntries(
+          Object.entries(base.shortcuts).filter(([key]) => key !== id),
+        ),
+      })),
+    [update],
+  );
+
   const value = useMemo<SettingsContextValue | null>(() => {
     if (!settings) {
       return null;
@@ -94,8 +178,22 @@ export function SettingsProvider({ store, children }: SettingsProviderProps) {
       saveSidebarCollapsed,
       saveOpenTabs,
       saveThemeMode,
+      addShortcut,
+      removeShortcut,
+      replaceShortcut,
+      resetShortcut,
     };
-  }, [settings, saveLayout, saveSidebarCollapsed, saveOpenTabs, saveThemeMode]);
+  }, [
+    settings,
+    saveLayout,
+    saveSidebarCollapsed,
+    saveOpenTabs,
+    saveThemeMode,
+    addShortcut,
+    removeShortcut,
+    replaceShortcut,
+    resetShortcut,
+  ]);
 
   if (!value) {
     return null;
