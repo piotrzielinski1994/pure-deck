@@ -7,16 +7,22 @@ import {
   type ReactNode,
 } from "react";
 import { useSettings } from "@/lib/settings/settings-context";
-import type { ThemeMode } from "@/lib/settings/settings";
+import type { ThemeColors, ThemeMode } from "@/lib/settings/settings";
 import {
   resolveEffectiveMode,
   type EffectiveMode,
 } from "@/lib/theme/effective-mode";
+import { applyDefaults } from "@/lib/theme/overrides";
+import { applyThemeVars } from "@/lib/theme/apply-vars";
+import { DEFAULT_THEME_COLORS } from "@/lib/theme/theme-defaults";
 
 type ThemeContextValue = {
   mode: ThemeMode;
   effectiveMode: EffectiveMode;
   setMode: (mode: ThemeMode) => void;
+  colors: ThemeColors;
+  effectiveColors: ThemeColors;
+  setColors: (colors: ThemeColors) => void;
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -31,8 +37,9 @@ function getPrefersDark(): boolean {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const { settings, saveThemeMode } = useSettings();
+  const { settings, saveThemeMode, saveThemeColors } = useSettings();
   const mode = settings.theme.mode;
+  const colors = settings.theme.colors;
 
   const [prefersDark, setPrefersDark] = useState(getPrefersDark);
 
@@ -49,13 +56,37 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const effectiveMode = resolveEffectiveMode(mode, prefersDark);
 
+  const effectiveColors = useMemo(
+    () => applyDefaults(colors, DEFAULT_THEME_COLORS),
+    [colors],
+  );
+
   useLayoutEffect(() => {
     document.documentElement.classList.toggle("dark", effectiveMode === "dark");
-  }, [effectiveMode]);
+    applyThemeVars(
+      document.documentElement,
+      effectiveMode,
+      colors[effectiveMode],
+    );
+  }, [effectiveMode, colors]);
 
   const value = useMemo<ThemeContextValue>(
-    () => ({ mode, effectiveMode, setMode: saveThemeMode }),
-    [mode, effectiveMode, saveThemeMode],
+    () => ({
+      mode,
+      effectiveMode,
+      setMode: saveThemeMode,
+      colors,
+      effectiveColors,
+      setColors: saveThemeColors,
+    }),
+    [
+      mode,
+      effectiveMode,
+      saveThemeMode,
+      colors,
+      effectiveColors,
+      saveThemeColors,
+    ],
   );
 
   return (

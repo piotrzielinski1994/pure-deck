@@ -32,7 +32,7 @@ describe("DEFAULT_SETTINGS (AC-009)", () => {
       sidebarCollapsed: false,
       openTabIds: [],
       activeTabId: null,
-      theme: { mode: "system" },
+      theme: { mode: "system", colors: { light: { tokens: {}, editor: {} }, dark: { tokens: {}, editor: {} } } },
       shortcuts: {},
     });
   });
@@ -47,7 +47,10 @@ describe("mergeSettings (AC-009 / E-1 / TC-012)", () => {
     expect(merged.layouts).toEqual({});
     expect(merged.openTabIds).toEqual([]);
     expect(merged.activeTabId).toBeNull();
-    expect(merged.theme).toEqual({ mode: "system" });
+    expect(merged.theme).toEqual({
+      mode: "system",
+      colors: { light: { tokens: {}, editor: {} }, dark: { tokens: {}, editor: {} } },
+    });
   });
 
   it("should coerce a garbage or malformed blob to valid defaults without throwing", () => {
@@ -73,7 +76,10 @@ describe("mergeSettings (AC-009 / E-1 / TC-012)", () => {
       openTabIds: ["deck-1"],
     });
 
-    expect(merged.theme).toEqual({ mode: "dark" });
+    expect(merged.theme).toEqual({
+      mode: "dark",
+      colors: { light: { tokens: {}, editor: {} }, dark: { tokens: {}, editor: {} } },
+    });
     expect(merged.activeTabId).toBe("deck-1");
     expect(merged.openTabIds).toEqual(["deck-1"]);
     expect(merged.version).toBe(1);

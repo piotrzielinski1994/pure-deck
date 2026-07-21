@@ -13,6 +13,7 @@ import {
   type PanelLayout,
   type Settings,
   type SettingsStore,
+  type ThemeColors,
   type ThemeMode,
 } from "@/lib/settings/settings";
 import type { ShortcutActionId } from "@/lib/shortcuts/registry";
@@ -24,6 +25,7 @@ type SettingsContextValue = {
   saveSidebarCollapsed: (collapsed: boolean) => void;
   saveOpenTabs: (openTabIds: string[], activeTabId: string | null) => void;
   saveThemeMode: (mode: ThemeMode) => void;
+  saveThemeColors: (colors: ThemeColors) => void;
   saveCollectionPath: (path: string | undefined) => void;
   saveGoogleAccount: (account: { email: string } | undefined) => void;
   addShortcut: (id: ShortcutActionId, hotkey: string) => void;
@@ -93,6 +95,12 @@ export function SettingsProvider({ store, children }: SettingsProviderProps) {
   const saveThemeMode = useCallback(
     (mode: ThemeMode) =>
       update((base) => ({ ...base, theme: { ...base.theme, mode } })),
+    [update],
+  );
+
+  const saveThemeColors = useCallback(
+    (colors: ThemeColors) =>
+      update((base) => ({ ...base, theme: { ...base.theme, colors } })),
     [update],
   );
 
@@ -208,6 +216,7 @@ export function SettingsProvider({ store, children }: SettingsProviderProps) {
       saveSidebarCollapsed,
       saveOpenTabs,
       saveThemeMode,
+      saveThemeColors,
       saveCollectionPath,
       saveGoogleAccount,
       addShortcut,
@@ -221,6 +230,7 @@ export function SettingsProvider({ store, children }: SettingsProviderProps) {
     saveSidebarCollapsed,
     saveOpenTabs,
     saveThemeMode,
+    saveThemeColors,
     saveCollectionPath,
     saveGoogleAccount,
     addShortcut,

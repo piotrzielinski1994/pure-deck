@@ -192,7 +192,7 @@ describe("workspace shell stale active tab (E-8)", () => {
       sidebarCollapsed: false,
       openTabIds: ["spanish", "capitals"],
       activeTabId: "gone",
-      theme: { mode: "system" },
+      theme: { mode: "system", colors: { light: { tokens: {}, editor: {} }, dark: { tokens: {}, editor: {} } } },
       shortcuts: {},
     });
     renderShell(store);

@@ -1,17 +1,10 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { useTheme } from "@/lib/theme/theme-context";
-import type { ThemeMode } from "@/lib/settings/settings";
+import { ThemeSection } from "@/components/settings/theme-section";
 import { ShortcutsSection } from "@/components/settings/shortcuts-section";
 import { StorageSection } from "@/components/settings/storage-section";
 
 type Section = "theme" | "shortcuts" | "storage";
-
-const MODES: { id: ThemeMode; label: string }[] = [
-  { id: "light", label: "Light" },
-  { id: "dark", label: "Dark" },
-  { id: "system", label: "System" },
-];
 
 function SubTab({
   isActive,
@@ -36,36 +29,6 @@ function SubTab({
     >
       {children}
     </button>
-  );
-}
-
-function ThemeSection() {
-  const { mode, setMode } = useTheme();
-
-  return (
-    <section className="flex flex-col gap-1 p-6">
-      <h2 className="text-lg font-medium">Theme</h2>
-      <p className="text-sm text-muted-foreground">
-        Choose the app appearance, or follow your OS preference.
-      </p>
-      <div className="mt-3 flex">
-        {MODES.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            aria-pressed={mode === option.id}
-            onClick={() => setMode(option.id)}
-            className={cn(
-              "border border-l-0 px-4 py-1.5 text-sm first:border-l hover:bg-accent",
-              mode === option.id &&
-                "bg-primary text-primary-foreground hover:brightness-90",
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-    </section>
   );
 }
 

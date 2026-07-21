@@ -11,9 +11,68 @@ export type PanelLayout = Record<string, number>;
 
 export type ThemeMode = "light" | "dark" | "system";
 
+export type AppTokenName =
+  | "background"
+  | "foreground"
+  | "card"
+  | "card-foreground"
+  | "popover"
+  | "popover-foreground"
+  | "primary"
+  | "primary-foreground"
+  | "secondary"
+  | "secondary-foreground"
+  | "muted"
+  | "muted-foreground"
+  | "accent"
+  | "accent-foreground"
+  | "destructive"
+  | "border"
+  | "input"
+  | "ring";
+
+export type EditorTokenName =
+  | "caret"
+  | "selection"
+  | "gutter"
+  | "keyword"
+  | "string"
+  | "number"
+  | "property"
+  | "comment"
+  | "invalid";
+
+export type ThemeColorOverrides = {
+  tokens: Partial<Record<AppTokenName, string>>;
+  editor: Partial<Record<EditorTokenName, string>>;
+};
+
+export type ThemeColors = {
+  light: ThemeColorOverrides;
+  dark: ThemeColorOverrides;
+};
+
+export type FullThemeColorOverrides = {
+  tokens: Record<AppTokenName, string>;
+  editor: Record<EditorTokenName, string>;
+};
+
+export type FullThemeColors = {
+  light: FullThemeColorOverrides;
+  dark: FullThemeColorOverrides;
+};
+
 export type ThemeSettings = {
   mode: ThemeMode;
+  colors: ThemeColors;
 };
+
+export function emptyThemeColors(): ThemeColors {
+  return {
+    light: { tokens: {}, editor: {} },
+    dark: { tokens: {}, editor: {} },
+  };
+}
 
 export type Settings = {
   version: 1;
@@ -38,11 +97,44 @@ export const DEFAULT_SETTINGS: Settings = {
   sidebarCollapsed: false,
   openTabIds: [],
   activeTabId: null,
-  theme: { mode: "system" },
+  theme: { mode: "system", colors: emptyThemeColors() },
   shortcuts: {},
 };
 
 const THEME_MODES: readonly ThemeMode[] = ["light", "dark", "system"];
+
+const APP_TOKEN_NAMES = new Set<string>([
+  "background",
+  "foreground",
+  "card",
+  "card-foreground",
+  "popover",
+  "popover-foreground",
+  "primary",
+  "primary-foreground",
+  "secondary",
+  "secondary-foreground",
+  "muted",
+  "muted-foreground",
+  "accent",
+  "accent-foreground",
+  "destructive",
+  "border",
+  "input",
+  "ring",
+]);
+
+const EDITOR_TOKEN_NAMES = new Set<string>([
+  "caret",
+  "selection",
+  "gutter",
+  "keyword",
+  "string",
+  "number",
+  "property",
+  "comment",
+  "invalid",
+]);
 
 const GROUP_KEYS: readonly PanelGroupKey[] = ["workspace"];
 
@@ -88,11 +180,52 @@ function mergeLayouts(
   }, base);
 }
 
+function mergeTokenMap<K extends string>(
+  value: unknown,
+  known: Set<string>,
+): Partial<Record<K, string>> {
+  if (!isRecord(value)) {
+    return {};
+  }
+  return Object.entries(value).reduce<Partial<Record<K, string>>>(
+    (acc, [key, val]) => {
+      if (!known.has(key) || typeof val !== "string") {
+        return acc;
+      }
+      return { ...acc, [key]: val };
+    },
+    {},
+  );
+}
+
+function mergeOverrides(value: unknown): ThemeColorOverrides {
+  if (!isRecord(value)) {
+    return { tokens: {}, editor: {} };
+  }
+  return {
+    tokens: mergeTokenMap<AppTokenName>(value.tokens, APP_TOKEN_NAMES),
+    editor: mergeTokenMap<EditorTokenName>(value.editor, EDITOR_TOKEN_NAMES),
+  };
+}
+
+function mergeThemeColors(value: unknown): ThemeColors {
+  if (!isRecord(value)) {
+    return emptyThemeColors();
+  }
+  return {
+    light: mergeOverrides(value.light),
+    dark: mergeOverrides(value.dark),
+  };
+}
+
 function mergeTheme(base: ThemeSettings, persisted: unknown): ThemeSettings {
-  if (!isRecord(persisted) || !isThemeMode(persisted.mode)) {
+  if (!isRecord(persisted)) {
     return base;
   }
-  return { mode: persisted.mode };
+  return {
+    mode: isThemeMode(persisted.mode) ? persisted.mode : base.mode,
+    colors: mergeThemeColors(persisted.colors),
+  };
 }
 
 function mergeStringArray(base: string[], persisted: unknown): string[] {
