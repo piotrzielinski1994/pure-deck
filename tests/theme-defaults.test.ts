@@ -1,12 +1,18 @@
 /// <reference types="node" />
 import { readFileSync } from "node:fs";
-import path from "node:path";
+import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
 import type { AppTokenName, FullThemeColors } from "@/lib/settings/settings";
 import { APP_TOKENS, DEFAULT_THEME_COLORS } from "@/lib/theme/theme-defaults";
 
-const REPO_ROOT = process.cwd();
-const indexCss = readFileSync(path.join(REPO_ROOT, "src/index.css"), "utf8");
+// The canonical :root/.dark tokens live in @pziel/pureui/styles/theme.css
+// (imported by src/index.css); read it off disk to cross-check the built-in
+// defaults against the real CSS.
+const nodeRequire = createRequire(import.meta.url);
+const indexCss = readFileSync(
+  nodeRequire.resolve("@pziel/pureui/styles/theme.css"),
+  "utf8",
+);
 
 const EXPECTED_APP_TOKENS: AppTokenName[] = [
   "background",
