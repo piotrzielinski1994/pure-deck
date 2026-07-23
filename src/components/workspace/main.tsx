@@ -1,10 +1,11 @@
+import { useActionHotkeys } from "@pziel/pureui";
 import { ContentTabs } from "@/components/workspace/content-tabs";
 import { DeckView } from "@/components/workspace/deck-view";
 import { SettingsView } from "@/components/workspace/settings-view";
 import { StudyView } from "@/components/workspace/study-view";
 import { useWorkspace } from "@/components/workspace/workspace-context";
 import { useSettings } from "@/lib/settings/settings-context";
-import { useActionHotkeys } from "@/lib/shortcuts/use-action-hotkeys";
+import { useEffectiveShortcuts } from "@/lib/shortcuts/use-effective-shortcuts";
 
 function EmptyState() {
   return (
@@ -77,10 +78,14 @@ export function Main() {
     saveDeck(deck);
   };
 
-  useActionHotkeys({
-    "toggle-sidebar": () => saveSidebarCollapsed(!settings.sidebarCollapsed),
-    "save-active-deck": saveActiveDeck,
-  });
+  useActionHotkeys(
+    {
+      "toggle-sidebar": () => saveSidebarCollapsed(!settings.sidebarCollapsed),
+      "save-active-deck": saveActiveDeck,
+    },
+    useEffectiveShortcuts(),
+    { preventDefault: true },
+  );
 
   return (
     <div className="flex h-full flex-col">

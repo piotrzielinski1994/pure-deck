@@ -1,5 +1,6 @@
+import { useActionHotkeys } from "@pziel/pureui";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useActionHotkeys } from "@/lib/shortcuts/use-action-hotkeys";
+import { useEffectiveShortcuts } from "@/lib/shortcuts/use-effective-shortcuts";
 import {
   type Card as FsrsCard,
   type Grade,
@@ -83,7 +84,9 @@ export function StudyView({
       ? 0
       : Math.round(((reviewed - tally[Rating.Again]) / reviewed) * 100);
 
-  useActionHotkeys({ "flip-card": flip });
+  useActionHotkeys({ "flip-card": flip }, useEffectiveShortcuts(), {
+    preventDefault: true,
+  });
 
   if (deck.cards.length === 0) {
     return (

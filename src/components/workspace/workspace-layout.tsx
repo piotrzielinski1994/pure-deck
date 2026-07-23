@@ -2,6 +2,7 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
+  useActionHotkeys,
   useIsMobile,
 } from "@pziel/pureui";
 import { useRef } from "react";
@@ -10,7 +11,7 @@ import { Main } from "@/components/workspace/main";
 import { MobileShell } from "@/components/workspace/mobile-shell";
 import { Sidebar } from "@/components/workspace/sidebar";
 import { useSettings } from "@/lib/settings/settings-context";
-import { useActionHotkeys } from "@/lib/shortcuts/use-action-hotkeys";
+import { useEffectiveShortcuts } from "@/lib/shortcuts/use-effective-shortcuts";
 import {
   PANEL_RESIZE_STEP,
   stepSidebarLayout,
@@ -29,10 +30,14 @@ export function WorkspaceLayout() {
     handle.setLayout(stepSidebarLayout(handle.getLayout(), deltaPct));
   };
 
-  useActionHotkeys({
-    "panel-expand": () => resizeSidebar(PANEL_RESIZE_STEP),
-    "panel-shrink": () => resizeSidebar(-PANEL_RESIZE_STEP),
-  });
+  useActionHotkeys(
+    {
+      "panel-expand": () => resizeSidebar(PANEL_RESIZE_STEP),
+      "panel-shrink": () => resizeSidebar(-PANEL_RESIZE_STEP),
+    },
+    useEffectiveShortcuts(),
+    { preventDefault: true },
+  );
 
   if (isMobile) {
     return <MobileShell />;
