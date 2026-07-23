@@ -1,4 +1,4 @@
-import { CommandPalette } from "@pziel/pureui";
+import { CommandPalette, useActionHotkeys } from "@pziel/pureui";
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { useState } from "react";
 import { ToastProvider } from "@/components/ui/toast";
@@ -10,7 +10,7 @@ import {
 import { PaletteProvider, usePalette } from "@/lib/palette/palette-context";
 import { SettingsProvider } from "@/lib/settings/settings-context";
 import { createSettingsStore } from "@/lib/settings/store-factory";
-import { useActionHotkeys } from "@/lib/shortcuts/use-action-hotkeys";
+import { useEffectiveShortcuts } from "@/lib/shortcuts/use-effective-shortcuts";
 import { ThemeProvider } from "@/lib/theme/theme-context";
 
 function ShellPalette() {
@@ -24,9 +24,13 @@ function ShellPalette() {
   } = useWorkspace();
   const { isOpen: isPaletteOpen, setOpen: setIsPaletteOpen } = usePalette();
 
-  useActionHotkeys({
-    "open-command-palette": () => setIsPaletteOpen(!isPaletteOpen),
-  });
+  useActionHotkeys(
+    {
+      "open-command-palette": () => setIsPaletteOpen(!isPaletteOpen),
+    },
+    useEffectiveShortcuts(),
+    { preventDefault: true },
+  );
 
   const deckCommands = decks.map((deck) => ({
     key: `open-deck-${deck.id}`,
